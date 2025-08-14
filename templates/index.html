@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ricerca Pubblicazioni</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+      border-radius: 20px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+      overflow: hidden;
+    }
+
+    .header {
+      background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+      color: white;
+      padding: 30px;
+      text-align: center;
+    }
+
+    .header h1 {
+      font-size: 2.5rem;
+      font-weight: 300;
+      margin-bottom: 10px;
+    }
+
+    .header p {
+      font-size: 1.1rem;
+      opacity: 0.9;
+    }
+
+    .search-section {
+      padding: 40px;
+      background: white;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 30px;
+      margin-bottom: 30px;
+    }
+
+    .input-group {
+      position: relative;
+    }
+
+    .input-group label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 600;
+      color: #333;
+      font-size: 1.4rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .input-group input {
+      width: 100%;
+      padding: 15px 20px;
+      border: 2px solid #e1e5e9;
+      border-radius: 12px;
+      font-size: 1.4rem;
+      transition: all 0.3s ease;
+      background: #f8f9fa;
+    }
+
+    .input-group input:focus {
+      outline: none;
+      border-color: #4facfe;
+      background: white;
+      box-shadow: 0 0 0 3px rgba(79, 172, 254, 0.1);
+      transform: translateY(-2px);
+    }
+
+    .search-btn {
+      width: 100%;
+      padding: 18px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      border-radius: 12px;
+      font-size: 1.6rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .search-btn:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+    }
+
+    .search-btn:active {
+      transform: translateY(-1px);
+    }
+
+    .search-btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .loading {
+      display: none;
+      text-align: center;
+      padding: 20px;
+      color: #666;
+    }
+
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid #4facfe;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 15px;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .results-section {
+      padding: 0 40px 40px;
+      display: none;
+    }
+
+    .results-header {
+      background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+      color: white;
+      padding: 20px;
+      border-radius: 12px 12px 0 0;
+      margin-bottom: 0;
+    }
+
+    .results-header h3 {
+      font-size: 1.3rem;
+      font-weight: 500;
+    }
+
+    .table-container {
+      background: white;
+      border-radius: 0 0 12px 12px;
+      overflow: hidden;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    th {
+      background: #f8f9fa;
+      padding: 15px 12px;
+      text-align: left;
+      font-weight: 600;
+      color: #333;
+      border-bottom: 2px solid #dee2e6;
+      font-size: 0.9rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    td {
+      padding: 15px 12px;
+      border-bottom: 1px solid #e9ecef;
+      transition: background-color 0.2s ease;
+    }
+
+    tr:hover td {
+      background-color: #f8f9fa;
+    }
+
+    tr.row-read {
+      background-color: #d4edda !important;
+    }
+
+    tr.row-read:hover td {
+      background-color: #c3e6cb !important;
+    }
+
+    .link-cell a {
+      color: #4facfe;
+      text-decoration: none;
+      font-weight: 500;
+      padding: 5px 10px;
+      border-radius: 6px;
+      background: rgba(79, 172, 254, 0.1);
+      transition: all 0.2s ease;
+    }
+
+    .link-cell a:hover {
+      background: #4facfe;
+      color: white;
+      transform: translateY(-1px);
+    }
+
+    .status-badge {
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .status-attivo {
+      background: #d4edda;
+      color: #155724;
+    }
+
+    .status-inattivo {
+      background: #f8d7da;
+      color: #721c24;
+    }
+
+    .status-letto {
+      background: #d1ecf1;
+      color: #0c5460;
+      font-weight: 600;
+    }
+
+    .message {
+      margin: 20px 0;
+      padding: 15px;
+      border-radius: 8px;
+      text-align: center;
+    }
+
+    .message.success {
+      background: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+    }
+
+    .message.error {
+      background: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+    }
+
+    .message.info {
+      background: #d1ecf1;
+      color: #0c5460;
+      border: 1px solid #bee5eb;
+    }
+
+    .read-btn {
+      background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+      color: white;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.8rem;
+      font-weight: 500;
+      transition: all 0.2s ease;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .read-btn:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(17, 153, 142, 0.4);
+    }
+
+    .read-btn:disabled {
+      background: #6c757d !important;
+      cursor: not-allowed;
+      opacity: 0.7;
+      transform: none !important;
+      box-shadow: none !important;
+    }
+
+    .read-btn.btn-read {
+      background: #d3d3d3 !important;
+      color: #666 !important;
+    }
+
+    @media (max-width: 768px) {
+      .form-grid {
+        grid-template-columns: 1fr;
+        gap: 20px;
+      }
+
+      .header h1 {
+        font-size: 2rem;
+      }
+
+      .search-section, .results-section {
+        padding: 20px;
+      }
+
+      .input-group label {
+        font-size: 1.6rem;
+      }
+
+      .input-group input {
+        font-size: 1.6rem;
+        padding: 18px 22px;
+      }
+
+      table {
+        font-size: 0.9rem;
+      }
+
+      th, td {
+        padding: 10px 8px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1> <strong>LA BACHECA DELLA SICUREZZA</strong>🔍</h1>
+      <p>Inserire il codice assegnato per visualizzare le pubblicazioni</p>
+      <p>(rispettando maiuscole e minuscole)</p>
+    </div>
+
+    <div class="search-section">
+      <form id="searchForm">
+        <div class="form-grid">
+          <div class="input-group">
+            <label for="codiceDipendente">DIGITARE IL CODICE QUI</label>
+            <input type="text" id="codiceDipendente" name="codiceDipendente" placeholder="Inserisci codice dipendente..." required>
+          </div>
+        </div>
+        <button type="submit" class="search-btn" id="cercaBtn">CERCA</button>
+      </form>
+
+      <div id="loading" class="loading">
+        <div class="spinner"></div>
+        <p>Ricerca in corso...</p>
+      </div>
+
+      <div id="message"></div>
+    </div>
+
+    <div id="resultsSection" class="results-section">
+      <div class="results-header">
+        <h3 id="resultsTitle">Risultati della ricerca</h3>
+      </div>
+      <div class="table-container">
+        <table id="resultsTable">
+          <thead id="tableHead"></thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    document.getElementById('searchForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      
+      const codiceDipendente = document.getElementById('codiceDipendente').value.trim();
+      
+      if (!codiceDipendente) {
+        mostraMessaggio('Inserisci il codice dipendente per continuare', 'error');
+        return;
+      }
+      
+      document.getElementById('loading').style.display = 'block';
+      document.getElementById('cercaBtn').disabled = true;
+      document.getElementById('resultsSection').style.display = 'none';
+      document.getElementById('message').innerHTML = '';
+      
+      // Chiamata API REST invece di Google Apps Script
+      fetch('/api/cerca', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          codiceDipendente: codiceDipendente
+        })
+      })
+      .then(response => response.json())
+      .then(data => gestisciRisultati(data))
+      .catch(error => gestisciErrore(error));
+    });
+
+    function gestisciRisultati(response) {
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('cercaBtn').disabled = false;
+      
+      if (response.successo) {
+        if (response.risultati.length > 0) {
+          mostraTabella(response.risultati, response.tipo);
+          mostraMessaggio(response.messaggio, 'success');
+        } else {
+          mostraMessaggio('Nessun risultato trovato per il codice inserito', 'info');
+          document.getElementById('resultsSection').style.display = 'none';
+        }
+      } else {
+        mostraMessaggio('Errore: ' + response.errore, 'error');
+        document.getElementById('resultsSection').style.display = 'none';
+      }
+    }
+
+    function gestisciErrore(error) {
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('cercaBtn').disabled = false;
+      mostraMessaggio('Errore di connessione: ' + error.message, 'error');
+      document.getElementById('resultsSection').style.display = 'none';
+    }
+
+    function isStatoLetto(stato) {
+      return stato && stato.toString().toLowerCase().startsWith('letto');
+    }
+
+    function mostraTabella(risultati, tipo) {
+      const tableHead = document.getElementById('tableHead');
+      const tableBody = document.getElementById('tableBody');
+      const resultsTitle = document.getElementById('resultsTitle');
+      
+      tableHead.innerHTML = '';
+      tableBody.innerHTML = '';
+      
+      if (risultati.length === 0) return;
+      
+      let intestazioni = [];
+      if (tipo === 'ditta') {
+        intestazioni = ['Ditta', 'Genere', 'Titolo', 'Versione', 'Link', 'Stato', 'Lettura'];
+        resultsTitle.textContent = `Pubblicazioni Ditta (${risultati.length} risultati)`;
+      } else if (tipo === 'dipendente') {
+        intestazioni = ['Ditta', 'Nominativo', 'Titolo', 'Versione', 'Link', 'Stato', 'Lettura'];
+        resultsTitle.textContent = `Pubblicazioni Dipendente (${risultati.length} risultati)`;
+      }
+      
+      const headerRow = document.createElement('tr');
+      intestazioni.forEach(intestazione => {
+        const th = document.createElement('th');
+        th.textContent = intestazione;
+        headerRow.appendChild(th);
+      });
+      tableHead.appendChild(headerRow);
+      
+      risultati.forEach((risultato, index) => {
+        const row = document.createElement('tr');
+        const isLetto = isStatoLetto(risultato.stato);
+        
+        if (isLetto) {
+          row.classList.add('row-read');
+        }
+        
+        const buttonText = isLetto ? 'LETTO' : 'CONFERMA LETTURA';
+        const buttonClass = isLetto ? 'read-btn btn-read' : 'read-btn';
+        const buttonDisabled = isLetto ? 'disabled' : '';
+        
+        let statusClass = 'status-inattivo';
+        if (isLetto) {
+          statusClass = 'status-letto';
+        } else if (risultato.stato) {
+          statusClass = 'status-attivo';
+        }
+        
+        if (tipo === 'ditta') {
+          row.innerHTML = `
+            <td>${risultato.ditta}</td>
+            <td>${risultato.genere}</td>
+            <td>${risultato.titolo}</td>
+            <td>${risultato.versione}</td>
+            <td class="link-cell">${risultato.link ? `<a href="${risultato.link}" target="_blank">Apri</a>` : 'N/A'}</td>
+            <td><span class="status-badge ${statusClass}">${risultato.stato || 'N/A'}</span></td>
+            <td><button class="${buttonClass}" onclick="segnaComeLetto('${risultato.idPubblicazione}', this, ${index})" ${buttonDisabled}>${buttonText}</button></td>
+          `;
+        } else if (tipo === 'dipendente') {
+          row.innerHTML = `
+            <td>${risultato.ditta}</td>
+            <td>${risultato.nominativo}</td>
+            <td>${risultato.titolo}</td>
+            <td>${risultato.versione}</td>
+            <td class="link-cell">${risultato.link ? `<a href="${risultato.link}" target="_blank">Apri</a>` : 'N/A'}</td>
+            <td><span class="status-badge ${statusClass}">${risultato.stato || 'N/A'}</span></td>
+            <td><button class="${buttonClass}" onclick="segnaComeLetto('${risultato.idPubblicazione}', this, ${index})" ${buttonDisabled}>${buttonText}</button></td>
+          `;
+        }
+        
+        tableBody.appendChild(row);
+      });
+      
+      document.getElementById('resultsSection').style.display = 'block';
+    }
+
+    function mostraMessaggio(testo, tipo) {
+      const messageDiv = document.getElementById('message');
+      messageDiv.innerHTML = `<div class="message ${tipo}">${testo}</div>`;
+      
+      if (tipo === 'success') {
+        setTimeout(() => {
+          messageDiv.innerHTML = '';
+        }, 5000);
+      }
+    }
+
+    function segnaComeLetto(idPubblicazione, buttonElement, rowIndex) {
+      if (buttonElement.disabled) return;
+      
+      buttonElement.disabled = true;
+      buttonElement.textContent = 'Aggiornando...';
+      
+      // Chiamata API REST invece di Google Apps Script
+      fetch('/api/aggiorna-stato', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          idPubblicazione: idPubblicazione
+        })
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.successo) {
+          const row = buttonElement.closest('tr');
+          const statusCell = row.cells[5];
+          statusCell.innerHTML = `<span class="status-badge status-letto">${data.nuovoStato}</span>`;
+          buttonElement.textContent = 'LETTO';
+          buttonElement.className = 'read-btn btn-read';
+          buttonElement.disabled = true;
+          row.classList.add('row-read');
+          mostraMessaggio(data.messaggio, 'success');
+        } else {
+          buttonElement.disabled = false;
+          buttonElement.textContent = 'CONFERMA LETTURA';
+          mostraMessaggio('Errore: ' + data.errore, 'error');
+        }
+      })
+      .catch(error => {
+        buttonElement.disabled = false;
+        buttonElement.textContent = 'CONFERMA LETTURA';
+        mostraMessaggio('Errore: ' + error.message, 'error');
+      });
+    }
+  </script>
+</body>
+</html>

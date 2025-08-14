@@ -1,0 +1,269 @@
+// ==========================
+// Code.gs - Script principale (Versione con gestione autenticazione migliorata)
+// ==========================
+
+// Mostra l'interfaccia HTML
+function doGet(e) {
+  try {
+    // Verifica se l'utente è autenticato
+    const user = Session.getActiveUser().getEmail();
+    
+    // Se l'utente non è autenticato, mostra un messaggio di errore
+    if (!user) {
+      return HtmlService.createHtmlOutput(`
+        <html>
+          <head>
+            <title>Ricerca Pubblicazioni - Accesso Richiesto</title>
+            <style>
+              body { 
+                font-family: Arial, sans-serif; 
+                text-align: center; 
+                padding: 50px; 
+                background-color: #f5f5f5;
+                margin: 0;
+              }
+              .container {
+                background: white;
+                border-radius: 10px;
+                padding: 40px;
+                box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+                max-width: 600px;
+                margin: 0 auto;
+              }
+              h2 { color: #d32f2f; margin-bottom: 20px; }
+              .info-box {
+                background: #e3f2fd;
+                border-left: 4px solid #2196f3;
+                padding: 20px;
+                margin: 20px 0;
+                text-align: left;
+                border-radius: 4px;
+              }
+              ul {
+                text-align: left;
+                display: inline-block;
+                margin: 20px 0;
+              }
+              li {
+                margin: 10px 0;
+                color: #555;
+              }
+              .highlight {
+                background: #fff3e0;
+                padding: 15px;
+                border-radius: 5px;
+                margin: 20px 0;
+              }
+            </style>
+          </head>
+          <body>
+            <div class="container">
+              <h2>🔐 Accesso Richiesto</h2>
+              <p>Per utilizzare questa applicazione, è necessario accedere con un account Google.</p>
+              
+              <div class="info-box">
+                <strong>Se stai visualizzando questo messaggio, prova a:</strong>
+                <ul>
+                  <li>✅ Accedere al tuo account Google</li>
+                  <li>✅ Utilizzare una finestra normale (non anonima)</li>
+                  <li>✅ Verificare che il deployment sia configurato correttamente</li>
+                  <li>✅ Controllare che le impostazioni di accesso siano su "Anyone"</li>
+                </ul>
+              </div>
+              
+              <div class="highlight">
+                <strong>💡 Suggerimento:</strong> L'autenticazione è richiesta per motivi di sicurezza 
+                quando si accede ai fogli di calcolo. Questo è un comportamento normale e previsto.
+              </div>
+            </div>
+          </body>
+        </html>
+      `);
+    }
+    
+    // Se l'utente è autenticato, mostra l'interfaccia completa
+    return HtmlService.createTemplateFromFile('index')
+      .evaluate()
+      .setSandboxMode(HtmlService.SandboxMode.IFRAME)
+      .setTitle('Ricerca Pubblicazioni');
+      
+  } catch (error) {
+    // Gestione errori più robusta
+    return HtmlService.createHtmlOutput(`
+      <html>
+        <head>
+          <title>Errore - Ricerca Pubblicazioni</title>
+          <style>
+            body { 
+              font-family: Arial, sans-serif; 
+              text-align: center; 
+              padding: 50px; 
+              background-color: #ffebee;
+            }
+            .error-container {
+              background: white;
+              border-radius: 10px;
+              padding: 40px;
+              box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+              max-width: 600px;
+              margin: 0 auto;
+            }
+            h2 { color: #d32f2f; }
+            .error-details {
+              background: #f5f5f5;
+              padding: 20px;
+              border-radius: 5px;
+              margin: 20px 0;
+              font-family: monospace;
+              text-align: left;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="error-container">
+            <h2>❌ Errore di Accesso</h2>
+            <p>Si è verificato un errore durante l'accesso all'applicazione.</p>
+            <div class="error-details">
+              <strong>Dettagli errore:</strong><br>
+              ${error.message}
+            </div>
+            <p>Contatta l'amministratore dell'applicazione per assistenza.</p>
+          </div>
+        </body>
+      </html>
+    `);
+  }
+}
+
+// Include file HTML/JS/CSS
+function include(filename) {
+  return HtmlService.createHtmlOutputFromFile(filename).getContent();
+}
+
+// ==========================
+// Ricerca pubblicazioni
+// ==========================
+function cercaPublicazioni(codiceDitta, codiceDipendente) {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    let risultati = [];
+    let tipo = '';
+
+    // --- RICERCA PER DITTA TEMPORANEAMENTE DISABILITATA ---
+    /*
+    if (codiceDitta && codiceDitta.trim() !== '') {
+      const foglio = ss.getSheetByName('PUBBLICAZIONI DITTE');
+      if (!foglio) throw new Error('Foglio "PUBBLICAZIONE DITTE" non trovato');
+
+      const dati = foglio.getDataRange().getValues();
+      if (dati[0].length < 12) throw new Error('Il foglio deve avere almeno 12 colonne (A-L)');
+
+      for (let i = 1; i < dati.length; i++) {
+        if (dati[i][0]?.toString().trim() === codiceDitta.toString().trim()) {
+          const stato = dati[i][10] || '';
+          risultati.push({
+            idPubblicazione: dati[i][2], // IDPUBBLICAZIONE in colonna C
+            ditta: dati[i][3] || '',
+            genere: dati[i][6] || '',
+            titolo: dati[i][7] || '',
+            versione: dati[i][8] || '',
+            link: dati[i][9] || '',
+            stato: stato,
+            lettura: dati[i][11] || '',
+            isLetto: stato.toString().toLowerCase().startsWith('letto')
+          });
+        }
+      }
+      tipo = 'ditta';
+    }
+    */
+
+    // --- Ricerca per IDDIPENDENTE ---
+    if (codiceDipendente && codiceDipendente.trim() !== '') {
+      const foglio = ss.getSheetByName('PUBBLICAZIONI DIPENDENTE');
+      if (!foglio) throw new Error('Foglio "PUBBLICAZIONI DIPENDENTE" non trovato');
+
+      const dati = foglio.getDataRange().getValues();
+      if (dati[0].length < 14) throw new Error('Il foglio deve avere almeno 14 colonne (A-N)');
+
+      for (let i = 1; i < dati.length; i++) {
+        if (dati[i][0]?.toString().trim() === codiceDipendente.toString().trim()) {
+          const stato = dati[i][12] || '';
+          risultati.push({
+            idPubblicazione: dati[i][2], // IDPUBBLICAZIONE in colonna C
+            ditta: dati[i][3] || '',
+            nominativo: dati[i][5] || '',
+            titolo: dati[i][9] || '',
+            versione: dati[i][10] || '',
+            link: dati[i][11] || '',
+            stato: stato,
+            lettura: dati[i][13] || '',
+            isLetto: stato.toString().toLowerCase().startsWith('letto')
+          });
+        }
+      }
+      tipo = 'dipendente';
+    }
+
+    return {
+      successo: true,
+      risultati,
+      tipo,
+      messaggio: risultati.length > 0 ? `Trovati ${risultati.length} risultati` : 'Nessun risultato trovato'
+    };
+
+  } catch (error) {
+    console.error('Errore nella ricerca:', error);
+    return { successo: false, errore: error.message, risultati: [], tipo: '' };
+  }
+}
+
+// ==========================
+// Aggiorna stato "letto" in base a IDPUBBLICAZIONE
+// ==========================
+function aggiornaStatoLetto(idPubblicazione) {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const now = new Date();
+    const dataOra = Utilities.formatDate(now, Session.getScriptTimeZone(), 'dd/MM/yyyy HH:mm');
+    const nuovoStato = `letto ${dataOra}`;
+
+    // Cerca su entrambi i fogli
+    const fogli = [
+      { nome: 'PUBBLICAZIONI DITTE', colStato: 10 },      // Colonna K
+      { nome: 'PUBBLICAZIONI DIPENDENTE', colStato: 12 }  // Colonna M
+    ];
+
+    for (const { nome, colStato } of fogli) {
+      const foglio = ss.getSheetByName(nome);
+      if (!foglio) continue;
+
+      const dati = foglio.getDataRange().getValues();
+      for (let i = 1; i < dati.length; i++) {
+        const cellValue = dati[i][2]; // Colonna C = IDPUBBLICAZIONE
+        if (cellValue && cellValue.toString().trim() === idPubblicazione.toString().trim()) {
+          const statoAttuale = dati[i][colStato] || '';
+          if (statoAttuale.toString().toLowerCase().startsWith('letto')) {
+            return {
+              successo: false,
+              errore: 'Già marcato come letto',
+              nuovoStato: statoAttuale
+            };
+          }
+          foglio.getRange(i + 1, colStato + 1).setValue(nuovoStato);
+          return {
+            successo: true,
+            messaggio: `Stato aggiornato a: ${nuovoStato}`,
+            nuovoStato
+          };
+        }
+      }
+    }
+
+    return { successo: false, errore: 'IDPUBBLICAZIONE non trovata' };
+
+  } catch (error) {
+    console.error('Errore nell\'aggiornamento dello stato:', error);
+    return { successo: false, errore: error.message };
+  }
+}

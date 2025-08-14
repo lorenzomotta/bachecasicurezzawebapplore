@@ -1,0 +1,17 @@
+# Ignora i file di configurazione e le dipendenze Python (se hai ancora file Flask)
+app.yaml
+main.py
+requirements.txt
+.env
+credentials.json
+__pycache__/
+*.pyc
+.pytest_cache/
+.vscode/
+
+# Ignora i file temporanei di Windows
+Thumbs.db
+Desktop.ini
+
+# Ignora i file temporanei di macOS
+.DS_Store
