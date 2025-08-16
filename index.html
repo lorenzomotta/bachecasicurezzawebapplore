@@ -446,6 +446,7 @@
     const itemsPerPage = 5; // You can adjust this value
     let currentResults = [];
     let currentType = '';
+    let currentNominativo = ''; // New global variable for nominativo
 
     document.getElementById('searchForm').addEventListener('submit', function(e) {
       e.preventDefault();
@@ -490,8 +491,8 @@
           currentResults = response.risultati;
           currentType = response.tipo;
           currentPage = 1; // Reset to first page
-          const nominativo = response.risultati.length > 0 && response.tipo === 'dipendente' ? response.risultati[0].nominativo : '';
-          mostraTabellaPaginata(nominativo);
+          currentNominativo = response.risultati.length > 0 && response.tipo === 'dipendente' ? response.risultati[0].nominativo : ''; // Store nominativo globally
+          mostraTabellaPaginata();
           mostraMessaggio(response.messaggio, 'success');
         } else {
           mostraMessaggio('Nessun risultato trovato per il codice inserito', 'info');
@@ -517,7 +518,7 @@
       return stato && stato.toString().toLowerCase().startsWith('letto');
     }
 
-    function mostraTabellaPaginata(nominativo) {
+    function mostraTabellaPaginata() {
       const tableHead = document.getElementById('tableHead');
       const tableBody = document.getElementById('tableBody');
       const resultsTitle = document.getElementById('resultsTitle');
@@ -556,7 +557,7 @@
         // Original headers: 'Ditta', 'Nominativo', 'Titolo', 'Versione', 'Link', 'Stato', 'Lettura'
         // The CSS will hide DITTA and NOMINATIVO columns
         intestazioni = ['Ditta', 'Nominativo', 'Titolo', 'Versione', 'Link', 'Stato', 'Lettura'];
-        resultsTitle.textContent = `SALVE ${nominativo}! Queste sono le pubblicazioni a te riservate (${currentResults.length})`;
+        resultsTitle.textContent = `SALVE ${currentNominativo}! Queste sono le pubblicazioni a te riservate (${currentResults.length})`;
       }
 
       const headerRow = document.createElement('tr');
@@ -604,7 +605,7 @@
           // All cells are generated, CSS will handle hiding DITTA and NOMINATIVO
           row.innerHTML = `
             <td>${risultato.ditta}</td>
-            <td>${nominativo || risultato.nominativo}</td>
+            <td>${currentNominativo || risultato.nominativo}</td>
             <td>${risultato.titolo}</td>
             <td>${risultato.versione}</td>
             <td class="link-cell">${risultato.link ? `<a href="${risultato.link}" target="_blank">Apri</a>` : 'N/A'}</td>
