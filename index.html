@@ -463,19 +463,20 @@
       document.getElementById('pagination').style.display = 'none'; // Hide pagination
       document.getElementById('message').innerHTML = '';
       
-      // Chiamata API REST invece di Google Apps Script
-      fetch('/api/cerca', {
+      // Re-enable Google Apps Script call
+      const WEB_APP_URL = window.WEB_APP_URL || 'https://script.google.com/macros/s/AKfycbxgKQ4xQeLM9uumkWg3iIGQrgtd7j3uCeYumORbn2ZvIXNor1VSY2Il72zjxdIEZhvACw/exec'; // REPLACE with your actual Web App URL
+      const body = new URLSearchParams({ action: 'cerca', codiceDipendente: codiceDipendente });
+
+      fetch(WEB_APP_URL, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
         },
-        body: JSON.stringify({
-          codiceDipendente: codiceDipendente
-        })
+        body: body
       })
-      .then(response => response.json())
-      .then(data => gestisciRisultati(data))
-      .catch(error => gestisciErrore(error));
+      .then(r => r.json())
+      .then(gestisciRisultati)
+      .catch(gestisciErrore);
     });
 
     function gestisciRisultati(response) {
@@ -661,29 +662,27 @@
       buttonElement.disabled = true;
       buttonElement.textContent = 'Aggiornando...';
       
-      // Chiamata API REST invece di Google Apps Script
-      fetch('/api/aggiorna-stato', {
+      // Re-enable Google Apps Script call
+      const WEB_APP_URL = window.WEB_APP_URL || 'https://script.google.com/macros/s/AKfycbyo8F0eD_GqjOQoIBIT3mw3fVtu1-nIp-8ZxU3LxMJAg2hHkheBLAQCXmAclkcaXneq3A/exec'; // REPLACE with your actual Web App URL
+      const body = new URLSearchParams({ action: 'aggiorna', idPubblicazione });
+      fetch(WEB_APP_URL, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          idPubblicazione: idPubblicazione
-        })
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
+        body: body
       })
-      .then(response => response.json())
-      .then(data => {
-        if (data.successo) {
+      .then(r => r.json())
+      .then(function(response) {
+        if (response.successo) {
           // Update the original results array
           if (currentResults[originalIndex]) {
-            currentResults[originalIndex].stato = data.nuovoStato;
+            currentResults[originalIndex].stato = response.nuovoStato;
           }
           mostraTabellaPaginata(); // Re-render table to reflect changes and pagination
-          mostraMessaggio(data.messaggio, 'success');
+          mostraMessaggio(response.messaggio, 'success');
         } else {
           buttonElement.disabled = false;
           buttonElement.textContent = 'CONFERMA LETTURA';
-          mostraMessaggio('Errore: ' + data.errore, 'error');
+          mostraMessaggio('Errore: ' + response.errore, 'error');
         }
       })
       .catch(error => {
