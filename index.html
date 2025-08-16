@@ -447,7 +447,7 @@
       document.getElementById('pagination').style.display = 'none'; // Hide pagination
       document.getElementById('message').innerHTML = '';
       
-      const WEB_APP_URL = window.WEB_APP_URL || 'http://127.0.0.1:9999/api/cerca'; // URL locale di Flask
+      const WEB_APP_URL = window.WEB_APP_URL || 'https://bachecasicurezzawebapplore.vercel.app/api/cerca'; // URL di Vercel
       const body = JSON.stringify({
         codiceDipendente: codiceDipendente
       });
@@ -624,8 +624,8 @@
       buttonElement.disabled = true;
       buttonElement.textContent = 'Aggiornando...';
       
-      // Usa l'endpoint locale di Flask
-      const WEB_APP_URL = window.WEB_APP_URL || 'http://127.0.0.1:9999/api/aggiorna-stato';
+      // Usa l'endpoint di Vercel
+      const WEB_APP_URL = window.WEB_APP_URL || 'https://bachecasicurezzawebapplore.vercel.app/api/aggiorna-stato';
       const body = JSON.stringify({ idPubblicazione });
       fetch(WEB_APP_URL, {
         method: 'POST',
