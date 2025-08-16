@@ -532,7 +532,7 @@
       });
 
       let intestazioni = [];
-      intestazioni = ['Ditta', 'Nominativo', 'Titolo', 'Versione', 'Link', 'Stato', 'Lettura'];
+      intestazioni = ['Titolo', 'Versione', 'Link', 'Stato', 'Lettura'];
       resultsTitle.textContent = `SALVE ${currentNominativo}! Queste sono le pubblicazioni a te riservate (${currentResults.length})`;
 
       const headerRow = document.createElement('tr');
@@ -567,8 +567,6 @@
         }
         
         row.innerHTML = `
-            <td>${risultato.ditta}</td>
-            <td>${currentNominativo || risultato.nominativo}</td>
             <td>${risultato.titolo}</td>
             <td>${risultato.versione}</td>
             <td class="link-cell">${risultato.link ? `<a href="${risultato.link}" target="_blank">Apri</a>` : 'N/A'}</td>
@@ -628,7 +626,7 @@
       buttonElement.textContent = 'Aggiornando...';
       
       // Re-enable Google Apps Script call
-      const WEB_APP_URL = window.WEB_APP_URL || 'https://script.google.com/macros/s/AKfycbyo8F0eD_GqjOQoIBIT3mw3fVtu1-nIp-8ZxU3LxMJAg2hHkheBLAQCXmAclkcaXneq3A/exec'; // REPLACE with your actual Web App URL
+      const WEB_APP_URL = window.WEB_APP_URL || 'https://script.google.com/macros/s/AKfycbyl2KD_D9bqBLmUDPzp77QzUjkSYW6YhJT61m-geLZJ_Paor44gZ8jJCkNbTItY7-53SA/exec'; // REPLACE with your actual Web App URL
       const body = new URLSearchParams({ action: 'aggiorna', idPubblicazione });
       fetch(WEB_APP_URL, {
         method: 'POST',
