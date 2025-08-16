@@ -378,22 +378,6 @@
       font-weight: 500;
     }
 
-    /* Added to hide DITTA and NOMINATIVO columns and expand TITOLO */
-    /* To show them again, simply comment out or remove these rules */
-    #resultsTable th:nth-child(1),
-    #resultsTable td:nth-child(1), /* DITTA column */
-    #resultsTable th:nth-child(2),
-    #resultsTable td:nth-child(2) /* NOMINATIVO column */
-    {
-      display: none;
-    }
-
-    /* Optional: If you need explicit width control for TITOLO after hiding others */
-    /* #resultsTable th:nth-child(3), */
-    /* #resultsTable td:nth-child(3) { */
-    /*   width: 100%; /* Or a specific percentage if needed */ */
-    /* } */
-
   </style>
 </head>
 <body>
@@ -445,7 +429,6 @@
     let currentPage = 1;
     const itemsPerPage = 5; // You can adjust this value
     let currentResults = [];
-    let currentType = '';
     let currentNominativo = ''; // New global variable for nominativo
 
     document.getElementById('searchForm').addEventListener('submit', function(e) {
@@ -489,9 +472,8 @@
       if (response.successo) {
         if (response.risultati.length > 0) {
           currentResults = response.risultati;
-          currentType = response.tipo;
           currentPage = 1; // Reset to first page
-          currentNominativo = response.risultati.length > 0 && response.tipo === 'dipendente' ? response.risultati[0].nominativo : ''; // Store nominativo globally
+          currentNominativo = response.risultati.length > 0 ? response.risultati[0].nominativo : ''; // Store nominativo globally
           mostraTabellaPaginata();
           mostraMessaggio(response.messaggio, 'success');
         } else {
@@ -550,15 +532,8 @@
       });
 
       let intestazioni = [];
-      if (currentType === 'ditta') {
-        intestazioni = ['Ditta', 'Genere', 'Titolo', 'Versione', 'Link', 'Stato', 'Lettura'];
-        resultsTitle.textContent = `Pubblicazioni Ditta (${currentResults.length} risultati)`;
-      } else if (currentType === 'dipendente') {
-        // Original headers: 'Ditta', 'Nominativo', 'Titolo', 'Versione', 'Link', 'Stato', 'Lettura'
-        // The CSS will hide DITTA and NOMINATIVO columns
-        intestazioni = ['Ditta', 'Nominativo', 'Titolo', 'Versione', 'Link', 'Stato', 'Lettura'];
-        resultsTitle.textContent = `SALVE ${currentNominativo}! Queste sono le pubblicazioni a te riservate (${currentResults.length})`;
-      }
+      intestazioni = ['Ditta', 'Nominativo', 'Titolo', 'Versione', 'Link', 'Stato', 'Lettura'];
+      resultsTitle.textContent = `SALVE ${currentNominativo}! Queste sono le pubblicazioni a te riservate (${currentResults.length})`;
 
       const headerRow = document.createElement('tr');
       intestazioni.forEach(intestazione => {
@@ -591,19 +566,7 @@
           statusClass = 'status-attivo';
         }
         
-        if (currentType === 'ditta') {
-          row.innerHTML = `
-            <td>${risultato.ditta}</td>
-            <td>${risultato.genere}</td>
-            <td>${risultato.titolo}</td>
-            <td>${risultato.versione}</td>
-            <td class="link-cell">${risultato.link ? `<a href="${risultato.link}" target="_blank">Apri</a>` : 'N/A'}</td>
-            <td><span class="status-badge ${statusClass}">${risultato.stato || 'N/A'}</span></td>
-            <td><button class="${buttonClass}" onclick="segnaComeLetto('${risultato.idPubblicazione}', this, ${startIndex + index})" ${buttonDisabled}>${buttonText}</button></td>
-          `;
-        } else if (currentType === 'dipendente') {
-          // All cells are generated, CSS will handle hiding DITTA and NOMINATIVO
-          row.innerHTML = `
+        row.innerHTML = `
             <td>${risultato.ditta}</td>
             <td>${currentNominativo || risultato.nominativo}</td>
             <td>${risultato.titolo}</td>
@@ -612,7 +575,6 @@
             <td><span class="status-badge ${statusClass}">${risultato.stato || 'N/A'}</span></td>
             <td><button class="${buttonClass}" onclick="segnaComeLetto('${risultato.idPubblicazione}', this, ${startIndex + index})" ${buttonDisabled}>${buttonText}</button></td>
           `;
-        }
         
         tableBody.appendChild(row);
       });

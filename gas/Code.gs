@@ -23,7 +23,7 @@ function doPost(e) {
       if (!codiceDipendente) {
         return jsonOutput({ successo: false, errore: 'Parametro "codiceDipendente" mancante', risultati: [], tipo: '' });
       }
-      var result = cercaPublicazioni('', codiceDipendente);
+      var result = cercaPublicazioni(codiceDipendente);
       Logger.log('doPost - Result from cercaPublicazioni: ' + JSON.stringify(result));
       return jsonOutput(result);
     }
@@ -65,7 +65,7 @@ function jsonOutput(obj) {
 // Logica applicativa riusata
 // ==========================
 
-function cercaPublicazioni(codiceDitta, codiceDipendente) {
+function cercaPublicazioni(codiceDipendente) {
   try {
     var ss = SpreadsheetApp.getActiveSpreadsheet();
     var risultati = [];
@@ -75,29 +75,34 @@ function cercaPublicazioni(codiceDitta, codiceDipendente) {
 
     // Ricerca per IDDIPENDENTE (colonna A)
     if (codiceDipendente && codiceDipendente.trim() !== '') {
-      var foglio = ss.getSheetByName('PUBBLICAZIONI DIPENDENTE');
+      var foglio = ss.getSheetByName('PUBBLICAZIONI DIPENDENTE'); // NOME FOGLIO CORRETTO: PUBBLICAZIONI DIPENDENTE
       if (!foglio) throw new Error('Foglio "PUBBLICAZIONI DIPENDENTE" non trovato');
 
       var dati = foglio.getDataRange().getValues();
-      if (dati[0].length < 14) throw new Error('Il foglio deve avere almeno 14 colonne (A-N)');
+      // La tua struttura ha 11 colonne (0-10)
+      if (dati[0].length < 11) throw new Error('Il foglio PUBBLICAZIONI DIPENDENTE deve avere almeno 11 colonne (A-K)');
 
       for (var i = 1; i < dati.length; i++) {
+        // IDDIPENDENTE è in colonna A (indice 0)
         if ((dati[i][0] || '').toString().trim() === codiceDipendente.toString().trim()) {
-          var stato = dati[i][12] || '';
+          // STATO è in colonna G (indice 6)
+          var stato = dati[i][6] || '';
           risultati.push({
-            idPubblicazione: dati[i][2],
-            ditta: dati[i][3] || '',
-            nominativo: dati[i][5] || '',
-            titolo: dati[i][9] || '',
-            versione: dati[i][10] || '',
-            link: dati[i][11] || '',
+            idPubblicazione: dati[i][9], // IDPUBBLICAZIONE in colonna J (indice 9)
+            ditta: dati[i][1] || '',      // DITTA in colonna B (indice 1)
+            nominativo: dati[i][2] || '', // NOMINATIVO in colonna C (indice 2)
+            titolo: dati[i][3] || '',     // TITOLO in colonna D (indice 3)
+            versione: dati[i][4] || '',   // VERSIONE in colonna E (indice 4)
+            link: dati[i][5] || '',       // LINK PUBBLICATO in colonna F (indice 5)
             stato: stato,
-            lettura: dati[i][13] || '',
+            lettura: stato, // LETTURA (usiamo lo stesso valore di stato per ora)
             isLetto: stato.toString().toLowerCase().startsWith('letto')
           });
         }
       }
       tipo = 'dipendente';
+    } else { // Removed the else if for ditta and only keeping for dipendente
+        return { successo: false, errore: 'Codice dipendente mancante per la ricerca', risultati: [], tipo: '' };
     }
 
     Logger.log('cercaPublicazioni - Found results count: ' + risultati.length);
@@ -123,26 +128,25 @@ function aggiornaStatoLetto(idPubblicazione) {
     var nuovoStato = 'letto ' + dataOra;
 
     var fogli = [
-      { nome: 'PUBBLICAZIONI DITTE', colStato: 10 },    // K
-      { nome: 'PUBBLICAZIONI DIPENDENTE', colStato: 12 } // M
+      { nome: 'PUBBLICAZIONI DIPENDENTE', colStato: 6 } // STATO in colonna G (indice 6)
     ];
 
-    for (var idx = 0; idx < fogli.length; idx++) {
-      var def = fogli[idx];
-      var foglio = ss.getSheetByName(def.nome);
-      if (!foglio) continue;
+    // Simplified loop to directly access the only sheet needed
+    var def = fogli[0]; // Only one entry now
+    var foglio = ss.getSheetByName(def.nome);
+    if (!foglio) throw new Error('Foglio "PUBBLICAZIONI DIPENDENTE" non trovato');
 
-      var dati = foglio.getDataRange().getValues();
-      for (var i = 1; i < dati.length; i++) {
-        var cellValue = dati[i][2]; // Colonna C = IDPUBBLICAZIONE
-        if (cellValue && cellValue.toString().trim() === idPubblicazione.toString().trim()) {
-          var statoAttuale = dati[i][def.colStato] || '';
-          if (statoAttuale.toString().toLowerCase().startsWith('letto')) {
-            return { successo: false, errore: 'Già marcato come letto', nuovoStato: statoAttuale };
-          }
-          foglio.getRange(i + 1, def.colStato + 1).setValue(nuovoStato);
-          return { successo: true, messaggio: 'Stato aggiornato a: ' + nuovoStato, nuovoStato: nuovoStato };
+    var dati = foglio.getDataRange().getValues();
+    for (var i = 1; i < dati.length; i++) {
+      // IDPUBBLICAZIONE è in colonna J (indice 9)
+      var cellValue = dati[i][9]; 
+      if (cellValue && cellValue.toString().trim() === idPubblicazione.toString().trim()) {
+        var statoAttuale = dati[i][def.colStato] || '';
+        if (statoAttuale.toString().toLowerCase().startsWith('letto')) {
+          return { successo: false, errore: 'Già marcato come letto', nuovoStato: statoAttuale };
         }
+        foglio.getRange(i + 1, def.colStato + 1).setValue(nuovoStato);
+        return { successo: true, messaggio: 'Stato aggiornato a: ' + nuovoStato, nuovoStato: nuovoStato };
       }
     }
 
