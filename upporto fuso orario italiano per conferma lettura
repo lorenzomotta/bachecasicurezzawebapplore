@@ -1,0 +1,83 @@
+[1mdiff --git a/app.py b/app.py[m
+[1mindex 79d7841..9b0d95f 100644[m
+[1m--- a/app.py[m
+[1m+++ b/app.py[m
+[36m@@ -5,6 +5,7 @@[m [mfrom google.cloud import storage[m
+ import os[m
+ import json[m
+ from datetime import datetime[m
+[32m+[m[32mimport pytz[m
+ [m
+ app = Flask(__name__, template_folder='.')[m
+ [m
+[36m@@ -294,8 +295,10 @@[m [mdef aggiorna_stato_letto():[m
+                 'errore': 'ID pubblicazione richiesto'[m
+             }), 400[m
+         [m
+[31m-        # Aggiorna stato nel foglio Google Sheets[m
+[31m-        nuovo_stato = f"Letto il {datetime.now().strftime('%d/%m/%Y %H:%M')}"[m
+[32m+[m[32m        # Aggiorna stato nel foglio Google Sheets con orario italiano[m
+[32m+[m[32m        timezone_italiana = pytz.timezone('Europe/Rome')[m
+[32m+[m[32m        orario_italiano = datetime.now(timezone_italiana)[m
+[32m+[m[32m        nuovo_stato = f"Letto il {orario_italiano.strftime('%d/%m/%Y %H:%M')}"[m
+         [m
+         if aggiorna_stato_sheets(id_pubblicazione, nuovo_stato):[m
+             return jsonify({[m
+[1mdiff --git a/index.html b/index.html[m
+[1mindex 0cdacc3..f3bd572 100644[m
+[1m--- a/index.html[m
+[1m+++ b/index.html[m
+[36m@@ -639,9 +639,11 @@[m
+           if (currentResults[originalIndex]) {[m
+             currentResults[originalIndex].stato = response.nuovoStato;[m
+           }[m
+[31m-          mostraTabellaPaginata(); // Re-render table to reflect changes and pagination[m
+[32m+[m[41m          [m
+[32m+[m[32m          // Aggiorna solo la riga specifica senza riordinare la tabella[m
+[32m+[m[32m          aggiornaRigaSingola(buttonElement, response.nuovoStato);[m
+           mostraMessaggio(response.messaggio, 'success');[m
+[31m-        } else {[m
+[32m+[m[32m                } else {[m
+           buttonElement.disabled = false;[m
+           buttonElement.textContent = 'CONFERMA LETTURA';[m
+           mostraMessaggio('Errore: ' + response.errore, 'error');[m
+[36m@@ -653,6 +655,27 @@[m
+         mostraMessaggio('Errore: ' + error.message, 'error');[m
+       });[m
+     }[m
+[32m+[m
+[32m+[m[32m    // Funzione per aggiornare solo una riga specifica senza riordinare[m
+[32m+[m[32m    function aggiornaRigaSingola(buttonElement, nuovoStato) {[m
+[32m+[m[32m      const row = buttonElement.closest('tr');[m
+[32m+[m[32m      if (!row) return;[m
+[32m+[m[41m      [m
+[32m+[m[32m      // Aggiorna lo stato nella tabella[m
+[32m+[m[32m      const statusCell = row.querySelector('.status-badge');[m
+[32m+[m[32m      if (statusCell) {[m
+[32m+[m[32m        statusCell.textContent = nuovoStato;[m
+[32m+[m[32m        statusCell.className = 'status-badge status-letto';[m
+[32m+[m[32m      }[m
+[32m+[m[41m      [m
+[32m+[m[32m      // Aggiorna il pulsante[m
+[32m+[m[32m      buttonElement.textContent = 'LETTO';[m
+[32m+[m[32m      buttonElement.className = 'read-btn btn-read';[m
+[32m+[m[32m      buttonElement.disabled = true;[m
+[32m+[m[41m      [m
+[32m+[m[32m      // Aggiungi la classe per lo stile della riga letta[m
+[32m+[m[32m      row.classList.add('row-read');[m
+[32m+[m[32m    }[m
+   </script>[m
+ </body>[m
+ </html>[m
+[1mdiff --git a/requirements.txt b/requirements.txt[m
+[1mindex 2098c61..51eebae 100644[m
+[1m--- a/requirements.txt[m
+[1m+++ b/requirements.txt[m
+[36m@@ -5,5 +5,4 @@[m [mgoogle-auth-oauthlib==1.1.0[m
+ google-auth-httplib2==0.1.1[m
+ google-api-python-client==2.108.0[m
+ google-cloud-storage==2.10.0 [m
+[31m-[m
+[31m-[m
+[32m+[m[32mpytz==2023.3[m
+\ No newline at end of file[m

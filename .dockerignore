@@ -1,0 +1,47 @@
+# File di sistema
+.DS_Store
+Thumbs.db
+
+# File di sviluppo
+*.pyc
+__pycache__/
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+pip-log.txt
+pip-delete-this-directory.txt
+
+# File di configurazione locale
+credentials.json
+.env
+.env.local
+
+# File di log
+*.log
+
+# File temporanei
+*.tmp
+*.temp
+
+# File di backup
+*.bak
+*.backup
+
+# File di Git
+.git/
+.gitignore
+
+# File di IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# File di deployment
+render.yaml
+app.yaml
+Procfile
+runtime.txt

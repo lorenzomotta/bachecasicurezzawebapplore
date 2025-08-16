@@ -1,12 +1,17 @@
 from flask import Flask, render_template, request, jsonify
+from flask_cors import CORS
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
 from google.cloud import storage
 import os
 import json
 from datetime import datetime
+import pytz
 
 app = Flask(__name__, template_folder='.')
+
+# Configurazione CORS per permettere richieste da fly.dev
+CORS(app, origins=['https://bachecasicurezza.fly.dev', 'http://localhost:3000'])
 
 # Configurazione Google Sheets API
 SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
@@ -294,8 +299,10 @@ def aggiorna_stato_letto():
                 'errore': 'ID pubblicazione richiesto'
             }), 400
         
-        # Aggiorna stato nel foglio Google Sheets
-        nuovo_stato = f"Letto il {datetime.now().strftime('%d/%m/%Y %H:%M')}"
+        # Aggiorna stato nel foglio Google Sheets con orario italiano
+        timezone_italiana = pytz.timezone('Europe/Rome')
+        orario_italiano = datetime.now(timezone_italiana)
+        nuovo_stato = f"Letto il {orario_italiano.strftime('%d/%m/%Y %H:%M')}"
         
         if aggiorna_stato_sheets(id_pubblicazione, nuovo_stato):
             return jsonify({
@@ -328,6 +335,6 @@ app.debug = False
 #     print(f"🌐 Server in ascolto su porta {os.environ.get('PORT', 9999)}")
 #     app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 9999)), debug=False)
 
-# Per Render: esporta la variabile app
+# Per Fly.io: esporta la variabile app
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 10000)), debug=False)
+    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 8080)), debug=False)

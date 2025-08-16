@@ -447,7 +447,7 @@
       document.getElementById('pagination').style.display = 'none'; // Hide pagination
       document.getElementById('message').innerHTML = '';
       
-      const WEB_APP_URL = window.WEB_APP_URL || 'https://bachecasicurezza.onrender.com/api/cerca'; // URL di Render
+      const WEB_APP_URL = window.WEB_APP_URL || '/api/cerca'; // URL locale dello stesso dominio
       const body = JSON.stringify({
         codiceDipendente: codiceDipendente
       });
@@ -624,8 +624,8 @@
       buttonElement.disabled = true;
       buttonElement.textContent = 'Aggiornando...';
       
-      // Usa l'endpoint di Render
-      const WEB_APP_URL = window.WEB_APP_URL || 'https://bachecasicurezza.onrender.com/api/aggiorna-stato';
+      // Usa l'endpoint locale dello stesso dominio
+      const WEB_APP_URL = window.WEB_APP_URL || '/api/aggiorna-stato';
       const body = JSON.stringify({ idPubblicazione });
       fetch(WEB_APP_URL, {
         method: 'POST',
@@ -639,9 +639,11 @@
           if (currentResults[originalIndex]) {
             currentResults[originalIndex].stato = response.nuovoStato;
           }
-          mostraTabellaPaginata(); // Re-render table to reflect changes and pagination
+          
+          // Aggiorna solo la riga specifica senza riordinare la tabella
+          aggiornaRigaSingola(buttonElement, response.nuovoStato);
           mostraMessaggio(response.messaggio, 'success');
-        } else {
+                } else {
           buttonElement.disabled = false;
           buttonElement.textContent = 'CONFERMA LETTURA';
           mostraMessaggio('Errore: ' + response.errore, 'error');
@@ -652,6 +654,27 @@
         buttonElement.textContent = 'CONFERMA LETTURA';
         mostraMessaggio('Errore: ' + error.message, 'error');
       });
+    }
+
+    // Funzione per aggiornare solo una riga specifica senza riordinare
+    function aggiornaRigaSingola(buttonElement, nuovoStato) {
+      const row = buttonElement.closest('tr');
+      if (!row) return;
+      
+      // Aggiorna lo stato nella tabella
+      const statusCell = row.querySelector('.status-badge');
+      if (statusCell) {
+        statusCell.textContent = nuovoStato;
+        statusCell.className = 'status-badge status-letto';
+      }
+      
+      // Aggiorna il pulsante
+      buttonElement.textContent = 'LETTO';
+      buttonElement.className = 'read-btn btn-read';
+      buttonElement.disabled = true;
+      
+      // Aggiungi la classe per lo stile della riga letta
+      row.classList.add('row-read');
     }
   </script>
 </body>
