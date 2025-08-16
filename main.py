@@ -327,3 +327,7 @@ app.debug = False
 #     print(f"   - Template folder: {app.template_folder}")
 #     print(f"🌐 Server in ascolto su porta {os.environ.get('PORT', 9999)}")
 #     app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 9999)), debug=False)
+
+# Per Render: esporta la variabile app
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 10000)), debug=False)
