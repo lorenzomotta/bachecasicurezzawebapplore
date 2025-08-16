@@ -447,16 +447,15 @@
       document.getElementById('pagination').style.display = 'none'; // Hide pagination
       document.getElementById('message').innerHTML = '';
       
-      const WEB_APP_URL = window.WEB_APP_URL || 'https://script.google.com/macros/s/AKfycbyo8F0eD_GqjOQoIBIT3mw3fVtu1-nIp-8ZxU3LxMJAg2hHkheBLAQCXmAclkcaXneq3A/exec'; // REPLACE with your actual Web App URL
-      const body = new URLSearchParams({
-        action: 'cerca',
+      const WEB_APP_URL = window.WEB_APP_URL || 'http://127.0.0.1:9999/api/cerca'; // URL locale di Flask
+      const body = JSON.stringify({
         codiceDipendente: codiceDipendente
       });
 
       fetch(WEB_APP_URL, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
+          'Content-Type': 'application/json',
         },
         body: body
       })
@@ -625,12 +624,12 @@
       buttonElement.disabled = true;
       buttonElement.textContent = 'Aggiornando...';
       
-      // Re-enable Google Apps Script call
-      const WEB_APP_URL = window.WEB_APP_URL || 'https://script.google.com/macros/s/AKfycbyl2KD_D9bqBLmUDPzp77QzUjkSYW6YhJT61m-geLZJ_Paor44gZ8jJCkNbTItY7-53SA/exec'; // REPLACE with your actual Web App URL
-      const body = new URLSearchParams({ action: 'aggiorna', idPubblicazione });
+      // Usa l'endpoint locale di Flask
+      const WEB_APP_URL = window.WEB_APP_URL || 'http://127.0.0.1:9999/api/aggiorna-stato';
+      const body = JSON.stringify({ idPubblicazione });
       fetch(WEB_APP_URL, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
+        headers: { 'Content-Type': 'application/json' },
         body: body
       })
       .then(r => r.json())
