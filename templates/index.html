@@ -332,6 +332,68 @@
         padding: 10px 8px;
       }
     }
+
+    /* Pagination Styles */
+    .pagination-container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin-top: 20px;
+      padding: 15px;
+      background: #f8f9fa;
+      border-radius: 12px;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+      gap: 10px;
+    }
+
+    .pagination-btn {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      padding: 10px 18px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 1rem;
+      font-weight: 600;
+      transition: all 0.3s ease;
+      text-transform: uppercase;
+    }
+
+    .pagination-btn:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+    }
+
+    .pagination-btn:disabled {
+      background: #cccccc !important;
+      cursor: not-allowed;
+      opacity: 0.7;
+      transform: none !important;
+      box-shadow: none !important;
+    }
+
+    .pagination-info {
+      font-size: 1.1rem;
+      color: #555;
+      font-weight: 500;
+    }
+
+    /* Added to hide DITTA and NOMINATIVO columns and expand TITOLO */
+    /* To show them again, simply comment out or remove these rules */
+    #resultsTable th:nth-child(1),
+    #resultsTable td:nth-child(1), /* DITTA column */
+    #resultsTable th:nth-child(2),
+    #resultsTable td:nth-child(2) /* NOMINATIVO column */
+    {
+      display: none;
+    }
+
+    /* Optional: If you need explicit width control for TITOLO after hiding others */
+    /* #resultsTable th:nth-child(3), */
+    /* #resultsTable td:nth-child(3) { */
+    /*   width: 100%; /* Or a specific percentage if needed */ */
+    /* } */
+
   </style>
 </head>
 <body>
@@ -355,7 +417,7 @@
 
       <div id="loading" class="loading">
         <div class="spinner"></div>
-        <p>Ricerca in corso...</p>
+        <p>Ricerca in corso attendere prego...</p>
       </div>
 
       <div id="message"></div>
@@ -370,11 +432,21 @@
           <thead id="tableHead"></thead>
           <tbody id="tableBody"></tbody>
         </table>
+        <div id="pagination" class="pagination-container" style="display: none;">
+          <button id="prevBtn" class="pagination-btn">Precedente</button>
+          <span id="pageInfo" class="pagination-info"></span>
+          <button id="nextBtn" class="pagination-btn">Successivo</button>
+        </div>
       </div>
     </div>
   </div>
 
   <script>
+    let currentPage = 1;
+    const itemsPerPage = 5; // You can adjust this value
+    let currentResults = [];
+    let currentType = '';
+
     document.getElementById('searchForm').addEventListener('submit', function(e) {
       e.preventDefault();
       
@@ -388,6 +460,7 @@
       document.getElementById('loading').style.display = 'block';
       document.getElementById('cercaBtn').disabled = true;
       document.getElementById('resultsSection').style.display = 'none';
+      document.getElementById('pagination').style.display = 'none'; // Hide pagination
       document.getElementById('message').innerHTML = '';
       
       // Chiamata API REST invece di Google Apps Script
@@ -411,15 +484,21 @@
       
       if (response.successo) {
         if (response.risultati.length > 0) {
-          mostraTabella(response.risultati, response.tipo);
+          currentResults = response.risultati;
+          currentType = response.tipo;
+          currentPage = 1; // Reset to first page
+          const nominativo = response.risultati.length > 0 && response.tipo === 'dipendente' ? response.risultati[0].nominativo : '';
+          mostraTabellaPaginata(nominativo);
           mostraMessaggio(response.messaggio, 'success');
         } else {
           mostraMessaggio('Nessun risultato trovato per il codice inserito', 'info');
           document.getElementById('resultsSection').style.display = 'none';
+          document.getElementById('pagination').style.display = 'none';
         }
       } else {
         mostraMessaggio('Errore: ' + response.errore, 'error');
         document.getElementById('resultsSection').style.display = 'none';
+        document.getElementById('pagination').style.display = 'none';
       }
     }
 
@@ -428,31 +507,55 @@
       document.getElementById('cercaBtn').disabled = false;
       mostraMessaggio('Errore di connessione: ' + error.message, 'error');
       document.getElementById('resultsSection').style.display = 'none';
+      document.getElementById('pagination').style.display = 'none';
     }
 
     function isStatoLetto(stato) {
       return stato && stato.toString().toLowerCase().startsWith('letto');
     }
 
-    function mostraTabella(risultati, tipo) {
+    function mostraTabellaPaginata(nominativo) {
       const tableHead = document.getElementById('tableHead');
       const tableBody = document.getElementById('tableBody');
       const resultsTitle = document.getElementById('resultsTitle');
-      
+      const paginationDiv = document.getElementById('pagination');
+      const prevBtn = document.getElementById('prevBtn');
+      const nextBtn = document.getElementById('nextBtn');
+      const pageInfo = document.getElementById('pageInfo');
+
       tableHead.innerHTML = '';
       tableBody.innerHTML = '';
-      
-      if (risultati.length === 0) return;
-      
-      let intestazioni = [];
-      if (tipo === 'ditta') {
-        intestazioni = ['Ditta', 'Genere', 'Titolo', 'Versione', 'Link', 'Stato', 'Lettura'];
-        resultsTitle.textContent = `Pubblicazioni Ditta (${risultati.length} risultati)`;
-      } else if (tipo === 'dipendente') {
-        intestazioni = ['Ditta', 'Nominativo', 'Titolo', 'Versione', 'Link', 'Stato', 'Lettura'];
-        resultsTitle.textContent = `Pubblicazioni Dipendente (${risultati.length} risultati)`;
+
+      if (currentResults.length === 0) {
+        paginationDiv.style.display = 'none';
+        return;
       }
-      
+
+      // Sort results: unread (stato not starting with 'letto') first, then read
+      currentResults.sort((a, b) => {
+        const aIsLetto = isStatoLetto(a.stato);
+        const bIsLetto = isStatoLetto(b.stato);
+        
+        if (!aIsLetto && bIsLetto) {
+          return -1; // a (unread) comes before b (read)
+        } else if (aIsLetto && !bIsLetto) {
+          return 1; // b (unread) comes before a (read)
+        } else {
+          return 0; // maintain original order for same status
+        }
+      });
+
+      let intestazioni = [];
+      if (currentType === 'ditta') {
+        intestazioni = ['Ditta', 'Genere', 'Titolo', 'Versione', 'Link', 'Stato', 'Lettura'];
+        resultsTitle.textContent = `Pubblicazioni Ditta (${currentResults.length} risultati)`;
+      } else if (currentType === 'dipendente') {
+        // Original headers: 'Ditta', 'Nominativo', 'Titolo', 'Versione', 'Link', 'Stato', 'Lettura'
+        // The CSS will hide DITTA and NOMINATIVO columns
+        intestazioni = ['Ditta', 'Nominativo', 'Titolo', 'Versione', 'Link', 'Stato', 'Lettura'];
+        resultsTitle.textContent = `SALVE ${nominativo}! Queste sono le pubblicazioni a te riservate (${currentResults.length})`;
+      }
+
       const headerRow = document.createElement('tr');
       intestazioni.forEach(intestazione => {
         const th = document.createElement('th');
@@ -460,8 +563,12 @@
         headerRow.appendChild(th);
       });
       tableHead.appendChild(headerRow);
-      
-      risultati.forEach((risultato, index) => {
+
+      const startIndex = (currentPage - 1) * itemsPerPage;
+      const endIndex = startIndex + itemsPerPage;
+      const paginatedResults = currentResults.slice(startIndex, endIndex);
+
+      paginatedResults.forEach((risultato, index) => {
         const row = document.createElement('tr');
         const isLetto = isStatoLetto(risultato.stato);
         
@@ -480,7 +587,7 @@
           statusClass = 'status-attivo';
         }
         
-        if (tipo === 'ditta') {
+        if (currentType === 'ditta') {
           row.innerHTML = `
             <td>${risultato.ditta}</td>
             <td>${risultato.genere}</td>
@@ -488,17 +595,18 @@
             <td>${risultato.versione}</td>
             <td class="link-cell">${risultato.link ? `<a href="${risultato.link}" target="_blank">Apri</a>` : 'N/A'}</td>
             <td><span class="status-badge ${statusClass}">${risultato.stato || 'N/A'}</span></td>
-            <td><button class="${buttonClass}" onclick="segnaComeLetto('${risultato.idPubblicazione}', this, ${index})" ${buttonDisabled}>${buttonText}</button></td>
+            <td><button class="${buttonClass}" onclick="segnaComeLetto('${risultato.idPubblicazione}', this, ${startIndex + index})" ${buttonDisabled}>${buttonText}</button></td>
           `;
-        } else if (tipo === 'dipendente') {
+        } else if (currentType === 'dipendente') {
+          // All cells are generated, CSS will handle hiding DITTA and NOMINATIVO
           row.innerHTML = `
             <td>${risultato.ditta}</td>
-            <td>${risultato.nominativo}</td>
+            <td>${nominativo || risultato.nominativo}</td>
             <td>${risultato.titolo}</td>
             <td>${risultato.versione}</td>
             <td class="link-cell">${risultato.link ? `<a href="${risultato.link}" target="_blank">Apri</a>` : 'N/A'}</td>
             <td><span class="status-badge ${statusClass}">${risultato.stato || 'N/A'}</span></td>
-            <td><button class="${buttonClass}" onclick="segnaComeLetto('${risultato.idPubblicazione}', this, ${index})" ${buttonDisabled}>${buttonText}</button></td>
+            <td><button class="${buttonClass}" onclick="segnaComeLetto('${risultato.idPubblicazione}', this, ${startIndex + index})" ${buttonDisabled}>${buttonText}</button></td>
           `;
         }
         
@@ -506,7 +614,35 @@
       });
       
       document.getElementById('resultsSection').style.display = 'block';
+      updatePaginationControls();
+      paginationDiv.style.display = 'flex'; // Show pagination
     }
+
+    function updatePaginationControls() {
+      const totalPages = Math.ceil(currentResults.length / itemsPerPage);
+      const prevBtn = document.getElementById('prevBtn');
+      const nextBtn = document.getElementById('nextBtn');
+      const pageInfo = document.getElementById('pageInfo');
+
+      pageInfo.textContent = `Pagina ${currentPage} di ${totalPages}`;
+      prevBtn.disabled = currentPage === 1;
+      nextBtn.disabled = currentPage === totalPages;
+    }
+
+    document.getElementById('prevBtn').addEventListener('click', () => {
+      if (currentPage > 1) {
+        currentPage--;
+        mostraTabellaPaginata();
+      }
+    });
+
+    document.getElementById('nextBtn').addEventListener('click', () => {
+      const totalPages = Math.ceil(currentResults.length / itemsPerPage);
+      if (currentPage < totalPages) {
+        currentPage++;
+        mostraTabellaPaginata();
+      }
+    });
 
     function mostraMessaggio(testo, tipo) {
       const messageDiv = document.getElementById('message');
@@ -519,7 +655,7 @@
       }
     }
 
-    function segnaComeLetto(idPubblicazione, buttonElement, rowIndex) {
+    function segnaComeLetto(idPubblicazione, buttonElement, originalIndex) {
       if (buttonElement.disabled) return;
       
       buttonElement.disabled = true;
@@ -538,13 +674,11 @@
       .then(response => response.json())
       .then(data => {
         if (data.successo) {
-          const row = buttonElement.closest('tr');
-          const statusCell = row.cells[5];
-          statusCell.innerHTML = `<span class="status-badge status-letto">${data.nuovoStato}</span>`;
-          buttonElement.textContent = 'LETTO';
-          buttonElement.className = 'read-btn btn-read';
-          buttonElement.disabled = true;
-          row.classList.add('row-read');
+          // Update the original results array
+          if (currentResults[originalIndex]) {
+            currentResults[originalIndex].stato = data.nuovoStato;
+          }
+          mostraTabellaPaginata(); // Re-render table to reflect changes and pagination
           mostraMessaggio(data.messaggio, 'success');
         } else {
           buttonElement.disabled = false;
@@ -561,3 +695,5 @@
   </script>
 </body>
 </html>
+
+
