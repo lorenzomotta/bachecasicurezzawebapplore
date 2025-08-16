@@ -10,7 +10,28 @@ app = Flask(__name__, template_folder='.')
 
 # Configurazione Google Sheets API
 SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
-SERVICE_ACCOUNT_FILE = 'credentials.json'
+
+# Per Vercel, usa le variabili d'ambiente invece del file credentials.json
+def get_sheets_service():
+    """Crea il servizio per Google Sheets API"""
+    try:
+        # Controlla se siamo su Vercel (variabili d'ambiente) o locale (file)
+        if os.environ.get('GOOGLE_CREDENTIALS'):
+            # Su Vercel: usa le variabili d'ambiente
+            credentials_info = json.loads(os.environ.get('GOOGLE_CREDENTIALS'))
+            credentials = service_account.Credentials.from_service_account_info(
+                credentials_info, scopes=SCOPES)
+        else:
+            # Locale: usa il file credentials.json
+            SERVICE_ACCOUNT_FILE = 'credentials.json'
+            credentials = service_account.Credentials.from_service_account_file(
+                SERVICE_ACCOUNT_FILE, scopes=SCOPES)
+        
+        service = build('sheets', 'v4', credentials=credentials)
+        return service
+    except Exception as e:
+        print(f"Errore nell'autenticazione: {e}")
+        return None
 
 # Configurazione Google Sheets - AGGIORNA QUESTI VALORI
 SPREADSHEET_ID = '17t0lwJlczuxDrLFcM8kBqA3vYeBED89fir9TjiHDNI8'  # ID del tuo foglio "FILE PROVE DI GESTIONE"
@@ -19,21 +40,19 @@ SHEET_NAME = 'PUBBLICAZIONI DIPENDENTE'  # Nome del foglio per le pubblicazioni 
 # Configurazione Google Cloud Storage - AGGIORNA QUESTO VALORE
 BUCKET_NAME = 'YOUR_BUCKET_NAME_HERE'  # Nome del tuo bucket Cloud Storage
 
-def get_sheets_service():
-    """Crea il servizio per Google Sheets API"""
-    try:
-        credentials = service_account.Credentials.from_service_account_file(
-            SERVICE_ACCOUNT_FILE, scopes=SCOPES)
-        service = build('sheets', 'v4', credentials=credentials)
-        return service
-    except Exception as e:
-        print(f"Errore nell'autenticazione: {e}")
-        return None
-
 def get_storage_client():
     """Crea il client per Google Cloud Storage"""
     try:
-        storage_client = storage.Client.from_service_account_json(SERVICE_ACCOUNT_FILE)
+        # Controlla se siamo su Vercel (variabili d'ambiente) o locale (file)
+        if os.environ.get('GOOGLE_CREDENTIALS'):
+            # Su Vercel: usa le variabili d'ambiente
+            credentials_info = json.loads(os.environ.get('GOOGLE_CREDENTIALS'))
+            storage_client = storage.Client.from_service_account_info(credentials_info)
+        else:
+            # Locale: usa il file credentials.json
+            SERVICE_ACCOUNT_FILE = 'credentials.json'
+            storage_client = storage.Client.from_service_account_json(SERVICE_ACCOUNT_FILE)
+        
         return storage_client
     except Exception as e:
         print(f"Errore nel client storage: {e}")
