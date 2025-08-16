@@ -463,9 +463,11 @@
       document.getElementById('pagination').style.display = 'none'; // Hide pagination
       document.getElementById('message').innerHTML = '';
       
-      // Re-enable Google Apps Script call
-      const WEB_APP_URL = window.WEB_APP_URL || 'hhttps://script.google.com/macros/s/AKfycbxQHZSpgPCslUuoVqa61YjRJ0dkn96DI_L5YrKFUfWZndCl-FYvUqShr0n0LcBfJwwDUQ/exec'; // REPLACE with your actual Web App URL
-      const body = new URLSearchParams({ action: 'cerca', codiceDipendente: codiceDipendente });
+      const WEB_APP_URL = window.WEB_APP_URL || 'https://script.google.com/macros/s/AKfycbyo8F0eD_GqjOQoIBIT3mw3fVtu1-nIp-8ZxU3LxMJAg2hHkheBLAQCXmAclkcaXneq3A/exec'; // REPLACE with your actual Web App URL
+      const body = new URLSearchParams({
+        action: 'cerca',
+        codiceDipendente: codiceDipendente
+      });
 
       fetch(WEB_APP_URL, {
         method: 'POST',
@@ -475,8 +477,8 @@
         body: body
       })
       .then(r => r.json())
-      .then(gestisciRisultati)
-      .catch(gestisciErrore);
+      .then(data => gestisciRisultati(data))
+      .catch(error => gestisciErrore(error));
     });
 
     function gestisciRisultati(response) {

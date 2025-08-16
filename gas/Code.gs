@@ -11,6 +11,7 @@ function doPost(e) {
   try {
     var params = e && e.parameter ? e.parameter : {};
     var action = (params.action || '').toString();
+    Logger.log('doPost - Action: ' + action);
 
     if (!action) {
       return jsonOutput({ successo: false, errore: 'Parametro "action" mancante' });
@@ -18,10 +19,12 @@ function doPost(e) {
 
     if (action === 'cerca') {
       var codiceDipendente = (params.codiceDipendente || '').toString().trim();
+      Logger.log('doPost - Codice Dipendente: ' + codiceDipendente);
       if (!codiceDipendente) {
         return jsonOutput({ successo: false, errore: 'Parametro "codiceDipendente" mancante', risultati: [], tipo: '' });
       }
       var result = cercaPublicazioni('', codiceDipendente);
+      Logger.log('doPost - Result from cercaPublicazioni: ' + JSON.stringify(result));
       return jsonOutput(result);
     }
 
@@ -68,6 +71,8 @@ function cercaPublicazioni(codiceDitta, codiceDipendente) {
     var risultati = [];
     var tipo = '';
 
+    Logger.log('cercaPublicazioni - Starting search...');
+
     // Ricerca per IDDIPENDENTE (colonna A)
     if (codiceDipendente && codiceDipendente.trim() !== '') {
       var foglio = ss.getSheetByName('PUBBLICAZIONI DIPENDENTE');
@@ -95,6 +100,8 @@ function cercaPublicazioni(codiceDitta, codiceDipendente) {
       tipo = 'dipendente';
     }
 
+    Logger.log('cercaPublicazioni - Found results count: ' + risultati.length);
+
     return {
       successo: true,
       risultati: risultati,
@@ -103,6 +110,7 @@ function cercaPublicazioni(codiceDitta, codiceDipendente) {
     };
 
   } catch (error) {
+    Logger.log('cercaPublicazioni - Error: ' + error.message);
     return { successo: false, errore: error.message, risultati: [], tipo: '' };
   }
 }
